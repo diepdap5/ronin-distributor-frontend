@@ -11,6 +11,14 @@ export type Member = {
 export const members: Member[] = [
   {
     id: 1,
+    name: "Guild",
+    role: "Guild Admin",
+    team: "",
+    status: "active",
+    nickname: "",
+  },
+  {
+    id: 2,
     name: "umih4ra",
     role: "Guild Leader",
     team: "DPS",
@@ -18,7 +26,7 @@ export const members: Member[] = [
     nickname: "umi",
   },
   {
-    id: 2,
+    id:3,
     name: "NasuChan",
     role: "Old Guilder",
     team: "Healer",
@@ -26,7 +34,7 @@ export const members: Member[] = [
     nickname: "nasu",
   },
   {
-    id: 3,
+    id: 4,
     name: "Velyns",
     role: "Member",
     team: "Tank",
@@ -34,7 +42,7 @@ export const members: Member[] = [
     nickname: "Velyns",
   },
   {
-    id: 4,
+    id: 5,
     name: "sadboyyyyy",
     role: "Advisor",
     team: "DPS",
@@ -42,7 +50,7 @@ export const members: Member[] = [
     nickname: "sasa",
   },
   {
-    id: 5,
+    id: 6,
     name: "Banology",
     role: "Guardian",
     team: "DPS",

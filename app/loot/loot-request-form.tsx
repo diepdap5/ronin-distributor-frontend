@@ -1,33 +1,33 @@
-import { Button, DatePicker, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
+import { Accordion, AccordionItem, Button, Chip, DatePicker, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
 import MemberSearchBox from "../../components/member-search-box";
 import { ZonedDateTime } from "@internationalized/date";
 import { LockIcon } from "../../components/icons";
-import { Loot, lootTypes } from "@/types/loot";
+import { Loot, lootTypes, Request } from "@/types/loot";
 import { Member } from "@/types/member";
 import { useState, useEffect } from "react";
 import { DateTime } from "luxon";
 
 // Define the component that accepts the external data
-interface LootFormProps {
+interface LootRequestFormProps {
     defaultLoots: Loot[];
     defaultMembers: Member[];
     isOpen: any;
     onOpenChange: (open: boolean) => void;
-    isReadOnly: boolean;
     selectedLoot: Loot | null;
 }
 
-export default function LootForm({
+export default function LootRequestForm({
     defaultLoots,
     defaultMembers,
     isOpen,
     onOpenChange,
-    isReadOnly,
     selectedLoot
-}: LootFormProps) {
+}: LootRequestFormProps) {
     const [lootId, setLootId] = useState(selectedLoot?.id);
     const [lootName, setLootName] = useState(selectedLoot?.name || "");
     const [acquirer, setAcquirer] = useState<string | undefined>(selectedLoot?.accquirer);
+    const [requester, setRequester] = useState<string | undefined>("");
+    const [requestHistory, setrequestHistory] = useState<Request[] | undefined>(selectedLoot?.requestHistory);
     const [belongsTo, setBelongsTo] = useState<string | undefined>(selectedLoot?.belongsTo);
     const [distributedTo, setDistributedTo] = useState<string | undefined>(selectedLoot?.distributedTo);
     const [availableUntil, setAvailableUntil] = useState<ZonedDateTime | null>(stringToZonedDateTime(selectedLoot?.avaiableUntil));
@@ -36,16 +36,16 @@ export default function LootForm({
 
     // Update form fields when selectedLoot changes (for editing)
     useEffect(() => {
-            if (selectedLoot) {
-                setLootId(selectedLoot.id)
-                setLootName(selectedLoot.name);
-                setAcquirer(selectedLoot.accquirer);
-                setBelongsTo(selectedLoot.belongsTo);
-                setDistributedTo(selectedLoot.distributedTo);
-                setLootType(selectedLoot.type);
-                setAvailableUntil(stringToZonedDateTime(selectedLoot.avaiableUntil));
-            }
-        }, [selectedLoot]);
+        if (selectedLoot) {
+            setLootId(selectedLoot.id)
+            setLootName(selectedLoot.name);
+            setAcquirer(selectedLoot.accquirer);
+            setBelongsTo(selectedLoot.belongsTo);
+            setDistributedTo(selectedLoot.distributedTo);
+            setLootType(selectedLoot.type);
+            setAvailableUntil(stringToZonedDateTime(selectedLoot.avaiableUntil));
+        }
+    }, [selectedLoot]);
   
 
     return (
@@ -54,64 +54,92 @@ export default function LootForm({
                 {(onClose) => (
                     <>
                         <ModalHeader className="flex flex-col gap-1">
-                            {selectedLoot ? "Edit Loot" : "Add new loot"}
+                            {selectedLoot ? "No loot selected" : "Request loot"}
                         </ModalHeader>
                         <ModalBody>
                             <MemberSearchBox
                                 defaultItems={defaultLoots}
-                                isReadOnly={isReadOnly}
+                                isReadOnly
                                 label="Name"
                                 placeholder="Enter loot name"
                                 defaultSelectedKey={String(selectedLoot?.name)}
-                                onChange={(value) => setLootName(value.valueOf)}  // Corrected: expecting a string value
                             />
                             <MemberSearchBox
                                 defaultItems={defaultMembers}
-                                isReadOnly={isReadOnly}
+                                isReadOnly
                                 label="Acquirer"
                                 placeholder="Enter accquirer's name"
                                 defaultSelectedKey={String(selectedLoot?.accquirer)}
-                                onChange={(value) => setAcquirer(value.valueOf)}  // Corrected: expecting a string value
                             />
                             <MemberSearchBox
                                 defaultItems={defaultMembers}
-                                isReadOnly={isReadOnly}
+                                isReadOnly
                                 label="Belongs to"
                                 placeholder="Who is this belongs to?"
                                 defaultSelectedKey={String(selectedLoot?.belongsTo)}
-                                onChange={(value) => setBelongsTo(value)}  // Corrected: expecting a string value
-                            />
-                            <MemberSearchBox
-                                defaultItems={defaultMembers}
-                                isReadOnly={isReadOnly}
-                                label="Distributed to"
-                                placeholder="Who is this distributed to?"
-                                defaultSelectedKey={String(selectedLoot?.distributedTo)}
-                                value={distributedTo ?? undefined}  // Convert null to undefined
-                                onChange={(value) => setDistributedTo(value)}  // Corrected: expecting a string value
                             />
                             <DatePicker
                                 hideTimeZone
                                 showMonthAndYearPickers
-                                defaultValue={availableUntil || null}
+                                defaultValue={stringToZonedDateTime(selectedLoot?.avaiableUntil) || null}
                                 label="Available Until"
                                 variant="bordered"
                                 onChange={(date) => setAvailableUntil(date)}
                             />
                             <MemberSearchBox
                                 defaultItems={lootTypes.map((name, index) => ({ id: index + 1, name }))}
-                                isReadOnly={isReadOnly}
+                                isReadOnly
                                 label="Loot's type"
                                 placeholder="Loot Type is"
                                 defaultSelectedKey={String(selectedLoot?.type)}
                                 value={lootType}
-                                onChange={(value) => setLootType(value)}  // Corrected: expecting a string value
                             />
+                            <MemberSearchBox
+                                defaultItems={defaultMembers}
+                                isReadOnly
+                                label="Requesting person name"
+                                placeholder="Who are you?"
+                                onChange={(value) => setAcquirer(value.valueOf)}
+                            />
+                            {selectedLoot != null && selectedLoot.requestHistory.length > 0 && (
+                            <Accordion variant="bordered">
+                                <AccordionItem key="1" aria-label="People requesting for this" title="People requesting for this">
+                                Main gear: 
+                                {selectedLoot.requestHistory.filter(rq => rq.requestReason === 0).map((rq, index) =>
+                                    <span key={index}>
+                                        {index === 0 ? ` ${rq.requesterName}` : `, ${rq.requesterName}`}
+                                    </span>
+                                )}
+                                <br />
+                                Alternative gear: 
+                                {selectedLoot.requestHistory.filter(rq => rq.requestReason === 1).map((rq, index) =>
+                                    <span key={index}>
+                                        {index === 0 ? ` ${rq.requesterName}` : `, ${rq.requesterName}`}
+                                    </span>
+                                )}
+                                <br />
+                                Trait:
+                                {selectedLoot.requestHistory.filter(rq => rq.requestReason === 2).map((rq, index) =>
+                                    <span key={index}>
+                                        {index === 0 ? ` ${rq.requesterName}` : `, ${rq.requesterName}`}
+                                    </span>
+                                )}
+                                <br />
+                                Litho:
+                                {selectedLoot.requestHistory.filter(rq => rq.requestReason === 3).map((rq, index) =>
+                                    <span key={index}>
+                                        {index === 0 ? ` ${rq.requesterName}` : `, ${rq.requesterName}`}
+                                    </span>
+                                )}
+                                </AccordionItem>
+                            </Accordion>
+                            )}
+
                             <Input
                                 endContent={
                                     <LockIcon className="text-2xl text-default-400 pointer-events-none flex-shrink-0" />
                                 }
-                                label="Admin Password"
+                                label="Your own Password"
                                 placeholder="Enter password for confirmation"
                                 type="password"
                                 variant="bordered"
@@ -159,4 +187,3 @@ function stringToZonedDateTime(avaiableUntil: string  | undefined): ZonedDateTim
     }
     return null;
 }
-

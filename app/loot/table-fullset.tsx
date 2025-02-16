@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Table,
   TableHeader,
@@ -17,18 +17,27 @@ import {
   Tooltip,
   SharedSelection,
 } from "@heroui/react";
-import { Loot, loots } from "@/types/loot";
-import { ChevronDownIcon, DeleteIcon, EditIcon, EyeIcon, PlusIcon, SearchIcon, SubmitRequestIcon } from "@/components/icons";
+import { Loot } from "@/types/loot";
+import { ChevronDownIcon, DeleteIcon, EditIcon, EyeIcon, SearchIcon, SubmitRequestIcon } from "@/components/icons";
 import { DateTime } from "luxon";
+import LootForm from "./loot-form";
+import { Member } from "@/types/member";
+import LootRequestForm from "./loot-request-form";
 
 
 const columns = [
-    {name: "NAME", uid: "name", sortable: true},
-    {name: "Belongs To", uid: "belongs_to", sortable: true},
-    {name: "Distributed To", uid: "distributed_to", sortable: true},
-    {name: "Remaining Time", uid: "avaiable_until", sortable: true},
+    {name: "Name", uid: "name", sortable: true},
+    {name: "Accquirer", uid: "accquirer", sortable: true},
+    {name: "Belongs To", uid: "belongsTo", sortable: true},
+    {name: "Distributed To", uid: "distributedTo", sortable: true},
+    {name: "Remaining Time", uid: "avaiableUntil", sortable: true},
     {name: "ACTIONS", uid: "actions"},
 ];
+// Define the component that accepts the external data
+interface LootTableFullsetProps {
+  defaultLoots: Loot[];
+  defaultMembers: Member[];
+}
 
 interface SortDescriptor {
     column: keyof Loot | "actions";
@@ -39,9 +48,9 @@ export function capitalize(s: string) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
 }
 
-const INITIAL_VISIBLE_COLUMNS = ["name", "belongs_to", "avaiable_until", "actions"];
+const INITIAL_VISIBLE_COLUMNS = ["name", "accquirer", "belongsTo", "distributedTo", "avaiableUntil", "actions"];
 
-export default function LootTableFullset() {
+export default function LootTableFullset({ defaultLoots, defaultMembers}: LootTableFullsetProps) {
     const [filterValue, setFilterValue] = React.useState("");
     const [visibleColumns, setVisibleColumns] = React.useState<Set<string>>(
         new Set(INITIAL_VISIBLE_COLUMNS)
@@ -72,12 +81,9 @@ export default function LootTableFullset() {
     }, [visibleColumns]);
 
     const filteredItems = React.useMemo(() => {
-        let filteredLoots = [...loots];
+        let filteredLoots = [...defaultLoots];
 
         if (hasSearchFilter) {
-            // filteredLoots = filteredLoots.filter((loot) =>
-            //     loot.name.toLowerCase().includes(filterValue.toLowerCase()),
-            // );
             filteredLoots = filteredLoots.filter((loot) =>
               Object.values(loot)
                 .join(' ') // Combine all the values into a single string (to allow searching across all columns)
@@ -114,35 +120,62 @@ export default function LootTableFullset() {
             return sortDescriptor.direction === "descending" ? -cmp : cmp;
         });
     }, [sortDescriptor, items]);
+    
+    const [selectedLoot, setSelectedLoot] = React.useState<Loot | null>(null);
+    const [isLootFormOpen, setIsLootFormOpen] = React.useState(false);
+    const [isRequestFormOpen, setIsRequestFormOpen] = React.useState(false);
 
-    const renderCell = React.useCallback((loot: Loot, columnKey: keyof Loot | "actions") => {
-        const cellValue = loot[columnKey as keyof Loot];
+    const handleEditButtonClick = (loot: Loot) => {
+        setSelectedLoot(loot);  // Set the selected loot to be edited
+        setIsLootFormOpen(true); // Open the LootForm modal
+    };
+
+    const handleRequestButtonClick = (loot: Loot) => {
+      setSelectedLoot(loot);  // Set the selected loot to be edited
+      setIsRequestFormOpen(true); // Open the RequestForm modal
+  };
+
+    const renderCell = React.useCallback((loot: Loot, columnKey: keyof Omit<Loot, 'requestHistory'> | "actions") => {
+        const cellValue = loot[columnKey as keyof Omit<Loot, 'requestHistory'>];
 
         switch (columnKey) {
-        case "name":
+          case "name":
             return (
+              <div className="user-container">
                 <User
-                    avatarProps={{ radius: "lg", src: loot.avatar }}
-                    description={loot.type}
-                    name={cellValue as string}
+                  avatarProps={{
+                    radius: "lg",
+                    src: loot.avatar,
+                    style: { backgroundImage: `url('https://throneandliberty.gameslantern.com/images/sites/throneandliberty/buildeditor/Common/IMG_Itembg/BG_ItemGrade_04.webp')` }
+                  }}
+                  description={loot.type}
+                  name={cellValue as string}
                 >
-                    {loot.type}
+                  {loot.type}
                 </User>
+              </div>
+                
             );
-        case "belongs_to":
+        case "accquirer":
+          return (
+              <div className="flex flex-col">
+                  <p className="text-bold text-sm capitalize">{cellValue as string}</p>
+              </div>
+          );
+        case "belongsTo":
+          return (
+              <div className="flex flex-col">
+                  <p className="text-bold text-sm capitalize">{cellValue as string}</p>
+              </div>
+          );
+        case "distributedTo":
             return (
                 <div className="flex flex-col">
                     <p className="text-bold text-sm capitalize">{cellValue as string}</p>
                 </div>
             );
-        case "distributed_to":
-            return (
-                <div className="flex flex-col">
-                    <p className="text-bold text-sm capitalize">{cellValue as string}</p>
-                </div>
-            );
-        case "avaiable_until":
-            const availableUntil = DateTime.fromISO(loot.avaiable_until, { zone: 'utc' }).setZone('local');
+        case "avaiableUntil":
+            const availableUntil = DateTime.fromISO(loot.avaiableUntil, { zone: 'utc' }).setZone('local');
             const currentTime = DateTime.local();
             const diff = availableUntil.diff(currentTime, ['days', 'hours', 'minutes', 'seconds']);
 
@@ -179,12 +212,12 @@ export default function LootTableFullset() {
                         </span>
                     </Tooltip>
                     <Tooltip color="success" content="Request">
-                        <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
+                        <span className="text-lg text-default-400 cursor-pointer active:opacity-50" onClick={() => handleRequestButtonClick(loot)}>
                             <SubmitRequestIcon />
                         </span>
                     </Tooltip>
                     <Tooltip color="warning" content="Edit">
-                        <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
+                        <span className="text-lg text-default-400 cursor-pointer active:opacity-50" onClick={() => handleEditButtonClick(loot)}>
                             <EditIcon />
                         </span>
                     </Tooltip>
@@ -265,7 +298,7 @@ export default function LootTableFullset() {
           </div>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-default-400 text-small">Total {loots.length} loots</span>
+          <span className="text-default-400 text-small">Total {defaultLoots.length} loots</span>
           <label className="flex items-center text-default-400 text-small">
             Rows per page:
             <select
@@ -283,7 +316,7 @@ export default function LootTableFullset() {
   }, [
     filterValue,
     visibleColumns,
-    loots.length,
+    defaultLoots.length,
     onRowsPerPageChange,
     onSearchChange,
     onClear
@@ -315,7 +348,8 @@ export default function LootTableFullset() {
 
 
   return (
-    <Table
+    <div>
+      <Table
       isHeaderSticky
       aria-label="Example table with custom cells, pagination and sorting"
       bottomContent={bottomContent}
@@ -342,10 +376,28 @@ export default function LootTableFullset() {
       <TableBody emptyContent={"No loots found"} items={sortedItems}>
         {(item) => (
           <TableRow key={item.id}>
-            {(columnKey) => <TableCell>{renderCell(item, columnKey as keyof Loot | "actions")}</TableCell>}
+            {(columnKey) => <TableCell>{renderCell(item, columnKey as keyof Omit<Loot, 'requestHistory'> | "actions")}</TableCell>}
           </TableRow>
         )}
       </TableBody>
     </Table>
+      <LootForm
+        defaultLoots={defaultLoots}
+        defaultMembers={defaultMembers}
+        isOpen={isLootFormOpen}
+        onOpenChange={(open: boolean) => setIsLootFormOpen(open)} // Control modal open/close
+        isReadOnly={false}  // Set to true if you want to make the form read-only
+        selectedLoot={selectedLoot}  // Pass selected loot for editing
+      />
+      <LootRequestForm
+        isOpen={isRequestFormOpen}
+        onOpenChange={(open: boolean) => setIsRequestFormOpen(open)}
+        defaultLoots={defaultLoots}
+        defaultMembers={defaultMembers}
+        selectedLoot={selectedLoot}  // Pass selected loot for editing
+      />
+    </div>
+    
+    
   );
 }

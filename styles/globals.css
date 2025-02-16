@@ -1,3 +1,24 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.user-container .avatar {
+    position: relative;
+    background-size: cover; /* Ensure the background image covers the avatar */
+    background-position: center; /* Center the background image */
+}
+  
+.User .avatar img {
+border-radius: 50%; /* Ensure the avatar image remains circular */
+}
+
+.chip-class {
+    /* background-color: #e0e0e0; */
+    border-radius: 16px;
+    padding: 4px 8px;
+    border: 1px solid #000; /* Add border */
+    margin-right: 8px; /* Add space between chips */
+    margin-bottom: 8px; /* Add space below chips */
+  }
+  
+  

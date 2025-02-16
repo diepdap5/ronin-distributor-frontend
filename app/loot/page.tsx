@@ -1,39 +1,21 @@
 'use client'
-import React from "react";
+import React, { useState } from "react";
 import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Tooltip,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Button,
   useDisclosure,
-  Input,
-  RadioGroup, Radio,
-  DatePicker,
-  User,
 } from "@heroui/react";
-import { DateTime } from 'luxon';
-import { DeleteIcon, EditIcon, EyeIcon, PlusIcon, LockIcon, MailIcon } from "@/components/icons";
-import { Loot, loots } from "@/types/loot";
-import {now, getLocalTimeZone} from "@internationalized/date";
-import RealTimeSearch from "@/components/member-search-box";
+import { PlusIcon} from "@/components/icons";
+import { loots } from "@/types/loot";
 import { members } from "@/types/member";
-import MemberSearchBox from "@/components/member-search-box";
 import LootForm from "@/app/loot/loot-form";
-import LootTable from "./table";
 import LootTableFullset from "./table-fullset";
-
 
 export default function MembersPage() {
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
+  const [isReadOnly, setIsReadOnly] = useState(true); // State for read-only mode
+  const toggleReadOnly = () => {
+    setIsReadOnly((prevReadOnly) => !prevReadOnly); // Toggle read-only mode
+  };
   
   return (
     <div className="relative">
@@ -47,8 +29,9 @@ export default function MembersPage() {
         onOpenChange={onOpenChange}
         defaultLoots={loots}
         defaultMembers={members}
-      />
-      <LootTableFullset />
+        isReadOnly={isReadOnly} 
+        selectedLoot={null}      />
+      <LootTableFullset defaultLoots={loots} defaultMembers={members} />
     </div>
   );
   
